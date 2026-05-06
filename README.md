@@ -1,94 +1,97 @@
 # BoltLabeler
 
-볼트 라벨링 GUI — 사진 캡처, SAM 자동 라벨링, YOLO 학습, RealSense 실시간 감지.
+볼트 라벨링 / 학습 GUI — SAM 자동 라벨링 + YOLO 학습 + RealSense 실시간 감지.
 
-## 주요 기능
+> 카메라 PC 에서는 **영상만 찍어서 학습서버로 전송**하면 끝.
+> 프레임 캡처, 라벨링, 학습, 모델 테스트는 **모두 학습서버에서 처리**합니다.
 
-- **사진 만들기** — 영상에서 프레임 캡처
-- **라벨링하기** — SAM 자동 라벨링 + 검수 (수동 폴리곤 / 삭제 / 초기화)
-- **모델 테스트** — `best.pt` 로 RealSense 카메라 실시간 감지
+## 전체 구조
 
-## 설치 (Windows)
-
-PowerShell 에서:
-
-```powershell
-git clone https://github.com/Dongju3079/labeler.git
-cd labeler
-Set-ExecutionPolicy -Scope Process Bypass
-.\setup_windows.ps1
+```
+[카메라 PC]                       [학습서버 192.168.0.150]
+─────────                       ─────────────────────
+영상 녹화                        ~/labeler/  (이 repo)
+   ↓ scp 전송
+                                ~/<세션폴더>/photos/video.mp4
+                                       ↓
+                                python label_app.py
+                                ├─ [사진 만들기] 영상 → 프레임
+                                ├─ [라벨링하기]  SAM + 검수 → 학습
+                                └─ [모델 테스트] best.pt 확인
+                                       ↓
+                                ~/<세션폴더>/models/<날짜_v버전>/best.pt
+                                       ↓ (필요 시 PC 로 회수)
 ```
 
-스크립트가 자동으로 처리:
-- Python 3.11 확인
-- SAM 가중치(`sam_vit_b_01ec64.pth`, 358MB) 다운로드
-- 가상환경 `venv\` 생성
-- GPU 감지 → 적합한 PyTorch CUDA 빌드 설치
-- 의존성 설치
+## 카메라 PC
 
-> Python 3.11 미설치 시 [공식 사이트](https://www.python.org/downloads/release/python-3119/) 에서 설치 (PATH 추가 체크).
-> RealSense 카메라 사용 시 [Intel RealSense SDK 2.0](https://github.com/IntelRealSense/librealsense/releases) 별도 설치.
-
-## 실행
+설치할 것 **없음**. 영상 녹화 후 scp 만 보내면 됨.
 
 ```powershell
-.\venv\Scripts\python.exe label_app.py
-```
-
-처음 실행하면 작업 폴더 선택 다이얼로그가 뜸. 영문 경로 권장 (예: `C:\boltwork`).
-
-## 사용 흐름
-
-1. **[사진 만들기]** — 영상 파일 입력 → 프레임 캡처 → `C:\boltwork\photos\` 에 저장
-2. **[라벨링하기]** — SAM 자동 라벨링 → 검수
-   - 키 단축키: `클릭` 라벨 추가 / `우클릭` 삭제 / `M` 수동 모드 / `N` 네거티브 / `R` 초기화 / `A·D` 이동 / `Q` 종료
-   - `Q` 누르면 "학습 시작?" 다이얼로그 → **[아니오]** 클릭
-   - → `C:\boltwork\photos\` 안에 `.jpg` + `.txt` (라벨) 생성됨
-
-## 학습서버로 photos 이관
-
-학습은 별도 GPU 서버(`192.168.0.150`) 에서 처리. 라벨링 끝난 photos 폴더만 전송.
-
-**전송 방법** — PowerShell 에서:
-
-```powershell
-# 학습 세션마다 새 폴더 만들기 (날짜로 구분 권장)
-$session = "boltwork_$(Get-Date -Format yyyyMMdd_HHmm)"
-
-scp -r C:\boltwork\photos <계정>@192.168.0.150:~/$session/photos/
+# PowerShell - Windows 10/11 은 OpenSSH 기본 탑재
+scp <영상파일> <계정>@192.168.0.150:~/boltwork_<날짜>/photos/
 ```
 
 예시:
 ```powershell
-scp -r C:\boltwork\photos matthew@192.168.0.150:~/boltwork_20260506_1430/photos/
+scp C:\Videos\bolt_capture.mp4 matthew@192.168.0.150:~/boltwork_20260506/photos/
 ```
 
-학습은 서버에서 `train_only.py` 로 실행되며, 결과 `best.pt` 가 같은 세션 폴더 안의 `models/<날짜_v버전>/` 에 생성됨.
+세션 폴더 이름은 학습 한 사이클 단위로 자유롭게 (예: `boltwork_20260506`, `bolt_v1` 등).
 
-## 학습 완료 후 best.pt 회수 (서버 → Windows PC)
+## 학습서버 (Linux)
 
-학습이 끝나면 서버에 `~/<세션폴더>/models/<날짜_v버전>/best.pt` 가 생성됩니다.
-PowerShell 에서 다시 가져오기:
+### 설치 (1회)
+
+```bash
+cd ~
+git clone https://github.com/Dongju3079/labeler.git
+cd labeler
+chmod +x setup_linux.sh
+./setup_linux.sh
+```
+
+자동으로:
+- `python3.11`, `python3-tk` 설치
+- SAM 가중치 다운로드 (358MB)
+- `venv/` 생성
+- GPU 감지 → PyTorch CUDA 빌드 자동 선택 (RTX 50xx → cu128)
+- 의존성 설치
+
+### 실행
+
+```bash
+cd ~/labeler
+source venv/bin/activate
+python label_app.py
+```
+
+→ 작업 폴더 선택 다이얼로그 → 카메라 PC 가 보낸 세션 폴더 선택 (예: `~/boltwork_20260506`)
+
+### 사용 흐름
+
+1. **[사진 만들기]** → 보내준 영상(`photos/*.mp4`) 선택 → 프레임 캡처
+2. **[라벨링하기]** → SAM 자동 라벨링 + 검수
+   - 키: `클릭` 라벨 / `우클릭` 삭제 / `M` 수동 모드 / `N` 네거티브 / `R` 초기화 / `A·D` 이동 / `Q` 종료
+   - `Q` → "학습 시작?" → **[예]** → 자동으로 학습까지 진행
+3. **[모델 테스트]** (선택) → 학습서버에 RealSense 연결돼있으면 실시간 감지로 검증
+
+학습 완료 시 `~/<세션폴더>/models/<날짜_v버전>/best.pt` 생성.
+
+## best.pt 회수 (선택)
+
+카메라 PC 의 production 시스템에서 쓰려면, PC 의 PowerShell 에서:
 
 ```powershell
-# 서버의 models 폴더 통째로 회수 (모든 버전 포함)
-scp -r <계정>@192.168.0.150:~/<세션폴더>/models C:\boltwork\
+scp <계정>@192.168.0.150:~/<세션폴더>/models/<날짜_v버전>/best.pt C:\path\to\save\
 ```
 
-예시 (보냈을 때 세션이 `boltwork_20260506_1430` 이었다면):
-```powershell
-scp -r matthew@192.168.0.150:~/boltwork_20260506_1430/models C:\boltwork\
-```
+## 시스템 요구사항 (학습서버)
 
-→ `C:\boltwork\models\20260506_v1\best.pt` 로 저장됨.
-
-## 모델 테스트
-
-```powershell
-.\venv\Scripts\python.exe label_app.py
-```
-
-→ **[모델 테스트]** → 회수한 `best.pt` 선택 → RealSense 실시간 감지 시작.
+- Ubuntu 22.04 / Debian 12 권장
+- Python 3.11
+- NVIDIA GPU + 충분한 VRAM (권장 8GB 이상)
+- (선택) Intel RealSense D435i — 모델 테스트 실시간 감지용
 
 ## 라이선스
 
