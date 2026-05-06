@@ -79,6 +79,8 @@ python label_app.py
 
 ## 사용 흐름
 
+### 단일 PC 시나리오 (촬영 + 라벨링 + 학습 한 곳에서)
+
 ```
 [사진 만들기]
   영상 파일 입력 → 프레임 캡처 → photos/ 에 저장
@@ -86,10 +88,83 @@ python label_app.py
 [라벨링하기]
   photos/ 의 이미지에 SAM 자동 라벨링 → 검수 → YOLO-seg 학습
         ↓
-  models/ 에 best.pt 저장
+  models/YYYYMMDD_vN/best.pt 저장
         ↓
 [모델 테스트]
   best.pt + RealSense → 실시간 볼트 감지
+```
+
+### 분할 시나리오 (촬영/라벨링 PC + 학습서버)
+
+촬영용 PC에는 카메라가 있고, 학습은 GPU 서버에서 돌리는 경우:
+
+```
+[촬영 PC]                       [학습서버]                    [촬영 PC]
+─────────                       ───────                     ─────────
+사진 만들기                                                    
+   ↓                                                          
+라벨링하기 → 검수                                              
+   ↓ "학습 시작?" → No                                        
+workspace/ 완성                                                
+(photos/*.jpg + photos/*.txt)                                  
+   ↓ rsync 업로드                                            
+                                workspace/ 받음               
+                                   ↓                          
+                                python train_only.py workspace/
+                                   ↓                          
+                                models/YYYYMMDD_vN/best.pt   
+                                                ← rsync 다운로드
+                                                  best.pt 회수
+                                                       ↓
+                                                  모델 테스트
+                                                  (RealSense)
+```
+
+#### 핵심 명령
+
+**촬영 PC에서 라벨링만 (학습 안 함)**
+```bash
+python label_app.py
+# 라벨링하기 → 검수 → "학습 시작?" 다이얼로그에서 [아니오]
+```
+
+**촬영 PC → 학습서버 업로드** (PC에서 실행)
+```bash
+# workspace 통째로 업로드
+rsync -avz --progress /home/user/boltwork/ \
+    user@server:/home/user/boltwork/
+
+# 또는 photos/ 만 (모델은 서버가 새로 만듦)
+rsync -avz --progress /home/user/boltwork/photos/ \
+    user@server:/home/user/boltwork/photos/
+```
+
+**학습서버에서 학습** (서버에서 실행)
+```bash
+cd ~/labeler
+source venv/bin/activate
+python train_only.py /home/user/boltwork/
+
+# 옵션 추가
+python train_only.py /home/user/boltwork/ --epochs 200 --batch 32
+```
+
+**학습서버 → 촬영 PC 회수** (PC에서 실행)
+```bash
+# 가장 최신 버전 폴더만 pull
+rsync -avz --progress \
+    user@server:/home/user/boltwork/models/ \
+    /home/user/boltwork/models/
+
+# 또는 best.pt 단일 파일만
+scp user@server:/home/user/boltwork/models/20260506_v1/best.pt \
+    /home/user/boltwork/models/20260506_v1/
+```
+
+**촬영 PC에서 모델 테스트**
+```bash
+python label_app.py
+# 모델 테스트 → models/ 에서 best.pt 선택
 ```
 
 ## 모델 정보
