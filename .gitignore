@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# 모델 가중치 (별도 다운로드)
+*.pt
+*.pth
+*.onnx
+
+# 학습 결과 / 데이터셋
+runs/
+dataset/
+datasets/
+photos/
+models/
+*.cache
+
+# 작업 폴더 기억 파일
+workspace.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 빌드 산출물
+build/
+dist/
+*.spec
+*.egg-info/
+
+# 로그
+*.log

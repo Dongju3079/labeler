@@ -1,0 +1,11 @@
+# Core ML
+# torch / torchvision은 CUDA 버전에 맞춰 별도 설치 필요 (setup_linux.sh 참조)
+ultralytics>=8.0.0
+segment-anything>=1.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+PyYAML>=6.0
+
+# RealSense 카메라 (선택사항 - "모델 테스트" 기능 사용 시)
+# Linux: 시스템에 librealsense2 설치 필요
+pyrealsense2>=2.54.0
