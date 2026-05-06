@@ -29,13 +29,22 @@ echo "[3/5] Python 가상환경 생성 (venv/)..."
 python3.11 -m venv venv
 source venv/bin/activate
 
-# 4. PyTorch (CUDA 12.4) 설치
+# 4. PyTorch (CUDA) 설치
 echo ""
-echo "[4/5] PyTorch + CUDA 12.4 설치..."
+echo "[4/5] PyTorch + CUDA 설치..."
 echo "(GPU 없으면 CPU 버전으로 진행됩니다)"
 if command -v nvidia-smi &> /dev/null; then
-    echo "NVIDIA GPU 감지됨 - CUDA 빌드 설치"
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+    # GPU compute capability 감지 - Blackwell(sm_120, RTX 50xx)은 cu128 필요
+    GPU_CC=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1 | tr -d '.')
+    echo "감지된 GPU compute capability: ${GPU_CC}"
+
+    if [ "${GPU_CC}" -ge 120 ] 2>/dev/null; then
+        echo "→ Blackwell 이상 (RTX 50xx 등) 감지: CUDA 12.8 빌드 설치"
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+    else
+        echo "→ Ampere/Ada/Hopper: CUDA 12.4 빌드 설치"
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+    fi
 else
     echo "GPU 없음 - CPU 빌드 설치"
     pip install torch torchvision
