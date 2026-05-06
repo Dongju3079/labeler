@@ -22,6 +22,8 @@ scp "C:\Videos\bolt.mp4" matthew@192.168.0.150:~/boltwork_20260506/photos/
 > **⚠️ 경로 주의** — 영상 경로에 **공백 또는 한글**이 들어있으면 반드시 큰따옴표 `" "` 로 감싸기. 안 그러면 scp 가 끊어 읽어서 `No such file or directory` 에러.
 > 예: `"C:\Users\matth\OneDrive\Desktop\새 폴더\bolt.mp4"`
 
+> **처음 접속할 때**: `Are you sure you want to continue connecting (yes/no)?` 프롬프트가 한 번 뜸 → `yes` 입력. 이후 비밀번호 묻고, 한 번 인증하면 다음부터 자동.
+
 세션 폴더 이름(`boltwork_20260506`)은 매번 새로 정해도 됨.
 
 ---
