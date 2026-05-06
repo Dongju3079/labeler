@@ -65,15 +65,30 @@ scp -r C:\boltwork\photos matthew@192.168.0.150:~/boltwork_20260506_1430/photos/
 
 학습은 서버에서 `train_only.py` 로 실행되며, 결과 `best.pt` 가 같은 세션 폴더 안의 `models/<날짜_v버전>/` 에 생성됨.
 
-## 모델 테스트 (best.pt 회수 후)
+## 학습 완료 후 best.pt 회수 (서버 → Windows PC)
 
-학습 완료된 best.pt 를 `C:\boltwork\models\<날짜_v버전>\best.pt` 로 받아둔 뒤:
+학습이 끝나면 서버에 `~/<세션폴더>/models/<날짜_v버전>/best.pt` 가 생성됩니다.
+PowerShell 에서 다시 가져오기:
+
+```powershell
+# 서버의 models 폴더 통째로 회수 (모든 버전 포함)
+scp -r <계정>@192.168.0.150:~/<세션폴더>/models C:\boltwork\
+```
+
+예시 (보냈을 때 세션이 `boltwork_20260506_1430` 이었다면):
+```powershell
+scp -r matthew@192.168.0.150:~/boltwork_20260506_1430/models C:\boltwork\
+```
+
+→ `C:\boltwork\models\20260506_v1\best.pt` 로 저장됨.
+
+## 모델 테스트
 
 ```powershell
 .\venv\Scripts\python.exe label_app.py
 ```
 
-→ **[모델 테스트]** → best.pt 선택 → RealSense 실시간 감지 시작.
+→ **[모델 테스트]** → 회수한 `best.pt` 선택 → RealSense 실시간 감지 시작.
 
 ## 라이선스
 
