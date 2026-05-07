@@ -39,7 +39,21 @@ BoltLabeler.exe → 모델 테스트 (RealSense)
 
 > ⚠️ **한글 경로 금지** — SAM 모델 로딩이 깨질 수 있음. `새 폴더`, `바탕 화면` 같은 한글 폴더 안에 풀지 말 것.
 
-### 1-3. 실행
+### 1-3. SAM 가중치 파일 복사 (필수)
+
+압축 푼 후 `_internal\sam_vit_b_01ec64.pth` 를 `BoltLabeler.exe` 와 같은 폴더로 복사.
+
+PowerShell:
+```powershell
+cd C:\BoltLabeler
+Copy-Item _internal\sam_vit_b_01ec64.pth .
+```
+
+또는 파일 탐색기에서: `_internal\` 들어가서 `sam_vit_b_01ec64.pth` 우클릭→복사 → 한 단계 위 (BoltLabeler 폴더) 우클릭→붙여넣기.
+
+> 이 단계 빠뜨리면 [라벨링하기] 클릭 시 프로그램이 그냥 종료됨 (SAM 모델을 못 찾아서).
+
+### 1-4. 실행
 
 `C:\BoltLabeler\BoltLabeler.exe` 더블클릭.
 
